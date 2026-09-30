@@ -1,0 +1,14 @@
+const test=require('node:test');const assert=require('node:assert/strict');const P=require('../planning.js');
+const row={month:'2026-10',income:100,expense:30};
+test("滚动余额和资金缺口核对",()=>{const r=P.cashflow([{month:'2026-10',income:20000,expense:25000},{month:'2026-11',income:15000,expense:28000},{month:'2026-12',income:40000,expense:22000}],15000,8000);assert.deepEqual(r.details.map(x=>x.closing),[10000,-3000,15000]);assert.equal(r.lowest,-3000);assert.equal(r.firstShortfall,'2026-11');assert.equal(r.income,75000);assert.equal(r.expense,75000);});
+test("重复月份合并",()=>{const r=P.cashflow([row,row],0);assert.equal(r.details.length,1);assert.equal(r.closing,140);});
+test("遗漏月份补入时间顺序",()=>{const r=P.cashflow([row,{...row,month:'2026-12'}],0);assert.deepEqual(r.details.map(x=>x.month),['2026-10','2026-11','2026-12']);assert.equal(r.details[1].closing,70);});
+test("跨年月份排序",()=>{const r=P.cashflow([{...row,month:'2027-01'},{...row,month:'2026-12'}],0);assert.deepEqual(r.details.map(x=>x.month),['2026-12','2027-01']);});
+test("负期初余额可表达缺口",()=>{assert.equal(P.cashflow([row],-100).closing,-30);});
+test("低于预留但非负余额",()=>{assert.equal(P.cashflow([row],0,80).details[0].status,'低于预留');});
+test("恰好满足预留不预警",()=>{assert.equal(P.cashflow([row],0,70).firstShortfall,'');});
+test("负收入被拒绝",()=>{assert.throws(()=>P.cashflow([{...row,income:-1}],0));});
+test("无效月份被拒绝",()=>{assert.throws(()=>P.cashflow([{...row,month:'2026-13'}],0));});
+test("超过36个月被拒绝",()=>{assert.throws(()=>P.cashflow([row,{...row,month:'2029-10'}],0),/36个月/);});
+test("小数金额以分合计",()=>{const r=P.cashflow([{...row,income:.1,expense:0},{...row,income:.2,expense:0}],0);assert.equal(r.closing,.3);});
+test("缺失预算支出被拒绝",()=>{assert.throws(()=>P.cashflow([{...row,expense:''}],0),/请填写/);});
