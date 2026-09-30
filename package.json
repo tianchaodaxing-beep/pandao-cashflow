@@ -1,6 +1,6 @@
 {
   "name": "pandao-cashflow",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "编排月度收入和支出，查看月底余额与资金缺口。",
   "license": "MIT",
